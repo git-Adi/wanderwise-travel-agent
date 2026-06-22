@@ -1,0 +1,20 @@
+{
+  "weather": {
+    "command": ".venv/bin/python",
+    "args": ["mcp_servers/weather_server.py"],
+    "env": {}
+  },
+  "exa": {
+    "command": "npx",
+    "args": ["-y", "exa-mcp-server", "tools=web_search_exa,crawling_exa,deep_search_exa"],
+    "env": { "EXA_API_KEY": "${EXA_API_KEY}" }
+  },
+  "gdrive": {
+    "command": ".venv/bin/python",
+    "args": ["mcp_servers/gdrive_server.py"],
+    "env": {
+      "GDRIVE_CREDENTIALS": "${GDRIVE_CREDENTIALS}",
+      "GDRIVE_TOKEN": "${GDRIVE_TOKEN}"
+    }
+  }
+}
