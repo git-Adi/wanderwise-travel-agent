@@ -16,5 +16,13 @@
       "GDRIVE_CREDENTIALS": "${GDRIVE_CREDENTIALS}",
       "GDRIVE_TOKEN": "${GDRIVE_TOKEN}"
     }
+  },
+  "booking": {
+    "command": ".venv/bin/python",
+    "args": ["mcp_servers/booking_server.py"],
+    "env": {
+      "SERPAPI_KEY": "${SERPAPI_KEY}"
+    }
   }
+
 }
