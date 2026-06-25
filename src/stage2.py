@@ -1,4 +1,8 @@
-"""Stage 2: execute the research brief with live MCP tools and rank destinations."""
+"""Stage 2: execute the research brief with live MCP tools and rank destinations.
+
+Uses the Exa and weather servers. Returns a dict with ranked_locations, a summary,
+and the itinerary_prompt_template that feeds Part 2 of the project.
+"""
 
 from .agent import run_agent
 from .settings import extract_json, load_prompt

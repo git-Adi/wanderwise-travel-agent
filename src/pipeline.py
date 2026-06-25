@@ -1,4 +1,14 @@
-"""Part-1 pipeline orchestration."""
+"""Part-1 pipeline orchestration.
+
+  user query
+     -> Stage 1 (build research template)
+     -> save research template to Google Drive (via MCP)
+     -> Stage 2 (research + rank with Exa/weather MCP tools)
+     -> save ranked-locations / itinerary prompt template to Google Drive (via MCP)
+
+The Google Drive save goes through the gdrive MCP server's upload_text_file tool,
+called directly (deterministically) rather than via the model.
+"""
 
 import datetime as _dt
 
@@ -59,7 +69,7 @@ async def run_part1(
     save=True,
     on_event=print,
 ):
-    servers = load_servers()
+    servers = load_servers()  # weather, exa, gdrive
     async with MCPHost(servers) as host:
         for name, err in host.failed.items():
             on_event(f"! server '{name}' failed to start: {err}")
