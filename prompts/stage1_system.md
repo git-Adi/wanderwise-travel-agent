@@ -23,7 +23,9 @@ default to the assumptions list:
 ## What the RESEARCH BRIEF must instruct the downstream agent to do
 The brief must tell the research agent to evaluate every candidate destination against ALL of the
 following dimensions, naming the tool to use:
-  - **Weather & climate** for the exact travel window.
+  - **Weather & climate** for the exact travel window. Use the weather forecast tool for dates within
+    ~14 days; use the historical/seasonal-normals tool (same calendar dates in prior years) for dates
+    further out.
   - **Accessibility & travel logistics**: routes, distance and travel time from origin, road / traffic
     conditions, transport options, and any seasonal closures (Exa web search, recent sources).
   - **Accommodation**: availability and representative pricing within the budget band (Exa).
@@ -33,11 +35,14 @@ following dimensions, naming the tool to use:
   - **Connectivity & practicalities** (mobile network, ATMs, fuel/EV charging) where relevant.
   - **Local events or festivals** during the window (Exa).
   - **Recent traveler sentiment**: news articles, blogs, and first-hand visitor posts from roughly the
-    last 12-18 months (Exa).
+    last 12-18 months (Exa). Prefer recent, primary, first-hand sources over aggregators.
 
-It must also instruct the agent on **candidate discovery** when no destinations are named.
+It must also instruct the agent on **candidate discovery** when no destinations are named: brainstorm
+5-10 plausible candidates that satisfy the setting + travel-time constraints, then research and shortlist.
 
-Finally, it must specify the **exact deliverable** expected from the downstream agent.
+Finally, it must specify the **exact deliverable** expected from the downstream agent: a list of
+destinations ranked from highest to lowest priority, each scored against the conditions with cited
+evidence, plus a ready-to-use prompt template for a later itinerary-building agent.
 
 ## Output format
 Output STRICT JSON only. No prose, no markdown code fences. Exactly these keys:
@@ -59,5 +64,7 @@ Output STRICT JSON only. No prose, no markdown code fences. Exactly these keys:
     "named_destinations": ["..."]
   },
   "assumptions": ["..."],
-  "research_template": "A complete, self-contained Markdown research brief."
+  "research_template": "A complete, self-contained Markdown research brief addressed to the downstream research agent. It must embed the parsed conditions, the full dimension checklist, the candidate-discovery instruction, and the deliverable spec, because the next agent receives only this string plus tool access."
 }
+
+The research_template string must be fully self-contained.

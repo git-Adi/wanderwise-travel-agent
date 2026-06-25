@@ -1,6 +1,13 @@
 """Google Drive MCP server.
 
-Bootstrap sign-in once before running the pipeline:
+Exposes a single write tool over stdio:
+  - upload_text_file(filename, content, folder_id, mime_type) -> confirmation with file id + link
+
+Authentication uses the OAuth "installed app" flow with the narrow drive.file scope
+(the app can only see/manage files it creates). On first use it opens a browser to sign in
+and caches a token so later runs are non-interactive.
+
+Bootstrap the sign-in once before running the pipeline:
     python mcp_servers/gdrive_server.py --auth
 """
 
@@ -43,8 +50,17 @@ def _build_service():
 
 
 @mcp.tool()
-def upload_text_file(filename: str, content: str, folder_id: str = "", mime_type: str = "text/markdown") -> str:
-    """Create a text file in Google Drive with the given content."""
+def upload_text_file(
+    filename: str,
+    content: str,
+    folder_id: str = "",
+    mime_type: str = "text/markdown",
+) -> str:
+    """Create a text file in Google Drive with the given content.
+
+    If folder_id is provided the file is placed in that folder, otherwise in My Drive root.
+    Returns a confirmation containing the new file's id and shareable link.
+    """
     service = _build_service()
     metadata = {"name": filename}
     if folder_id:
