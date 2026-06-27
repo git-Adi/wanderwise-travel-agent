@@ -5,3 +5,5 @@ token.json
 __pycache__/
 *.pyc
 .DS_Store
+outputs/
+part1_output.json

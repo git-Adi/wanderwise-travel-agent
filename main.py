@@ -2,7 +2,7 @@
 
 Examples:
     python main.py --query "Quiet hill station near Delhi, 4 days early October, mid-range, photography, by road within 8h"
-    python main.py --query-file my_query.txt --model Qwen/Qwen2.5-72B-Instruct
+    python main.py --query-file my_query.txt --model llama-3.3-70b-versatile
     python main.py --query "..." --no-save        # skip Google Drive upload
 """
 
