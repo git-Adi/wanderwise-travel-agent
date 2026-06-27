@@ -5,7 +5,7 @@ and the itinerary_prompt_template that feeds Part 2 of the project.
 """
 
 from .agent import run_agent
-from .settings import extract_json, load_prompt
+from .settings import extract_json_safe, load_prompt
 
 
 async def research_and_rank(host, research_template, model, on_event=None):
@@ -25,4 +25,4 @@ async def research_and_rank(host, research_template, model, on_event=None):
         max_tokens=4096,
         on_event=on_event,
     )
-    return extract_json(raw)
+    return await extract_json_safe(raw, model, on_event=on_event)

@@ -1,7 +1,7 @@
 """Stage 4: find hotels and dining options using Booking.com + Exa."""
 
 from .agent import run_agent
-from .settings import extract_json, load_prompt
+from .settings import extract_json_safe, load_prompt
 
 
 async def find_hotels(host, destination, checkin, checkout, adults, budget, model, on_event=None):
@@ -21,7 +21,7 @@ async def find_hotels(host, destination, checkin, checkout, adults, budget, mode
         model=model,
         tool_servers=["booking", "exa"],
         max_turns=6,
-        max_tokens=2048,
+        max_tokens=3000,
         on_event=on_event,
     )
-    return extract_json(raw)
+    return await extract_json_safe(raw, model, on_event=on_event)

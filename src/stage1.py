@@ -5,7 +5,7 @@ with parsed_conditions, assumptions, and the research_template prompt string.
 """
 
 from .agent import run_agent
-from .settings import extract_json, load_prompt
+from .settings import extract_json_safe, load_prompt
 
 
 async def build_research_template(host, user_query, model):
@@ -24,4 +24,4 @@ async def build_research_template(host, user_query, model):
         max_turns=1,
         max_tokens=4096,
     )
-    return extract_json(raw)
+    return await extract_json_safe(raw, model)

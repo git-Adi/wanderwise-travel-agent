@@ -2,7 +2,7 @@
 
 import json
 from .agent import run_agent
-from .settings import extract_json, load_prompt
+from .settings import extract_json_safe, load_prompt
 
 
 async def build_itinerary(
@@ -55,7 +55,7 @@ async def build_itinerary(
         model=model,
         tool_servers=None,
         max_turns=1,
-        max_tokens=2048,
+        max_tokens=4000,
         on_event=on_event,
     )
-    return extract_json(raw)
+    return await extract_json_safe(raw, model, on_event=on_event)
