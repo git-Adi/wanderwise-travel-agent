@@ -4,14 +4,19 @@ Exposes a single write tool over stdio:
   - upload_text_file(filename, content, folder_id, mime_type) -> confirmation with file id + link
 
 Authentication uses the OAuth "installed app" flow with the narrow drive.file scope
-(the app can only see/manage files it creates). On first use it opens a browser to sign in
-and caches a token so later runs are non-interactive.
+(the app can only see/manage files it creates).
 
-Bootstrap the sign-in once before running the pipeline:
-    python mcp_servers/gdrive_server.py --auth
+Two ways to supply credentials:
+  - Local dev: GDRIVE_CREDENTIALS / GDRIVE_TOKEN point to files on disk. On first use this
+    opens a browser to sign in and caches a token so later runs are non-interactive.
+    Bootstrap once with: python mcp_servers/gdrive_server.py --auth
+  - Production (e.g. Streamlit Cloud secrets): GDRIVE_CREDENTIALS_JSON / GDRIVE_TOKEN_JSON
+    hold the raw JSON contents directly (no filesystem, no browser available). Mint the
+    token.json locally first, then paste both files' contents into your host's secrets.
 """
 
 import io
+import json
 import os
 import sys
 
@@ -25,27 +30,38 @@ from mcp.server.fastmcp import FastMCP
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 CREDENTIALS_FILE = os.environ.get("GDRIVE_CREDENTIALS", "credentials.json")
 TOKEN_FILE = os.environ.get("GDRIVE_TOKEN", "token.json")
+CREDENTIALS_JSON = os.environ.get("GDRIVE_CREDENTIALS_JSON", "")
+TOKEN_JSON = os.environ.get("GDRIVE_TOKEN_JSON", "")
 
 mcp = FastMCP("gdrive")
 
 
 def _build_service():
     creds = None
-    if os.path.exists(TOKEN_FILE):
+    if TOKEN_JSON:
+        creds = Credentials.from_authorized_user_info(json.loads(TOKEN_JSON), SCOPES)
+    elif os.path.exists(TOKEN_FILE):
         creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
-        else:
-            if not os.path.exists(CREDENTIALS_FILE):
-                raise FileNotFoundError(
-                    f"Google OAuth client secret not found at '{CREDENTIALS_FILE}'. "
-                    "Download it from Google Cloud Console (OAuth client, type 'Desktop app')."
-                )
+        elif CREDENTIALS_JSON:
+            flow = InstalledAppFlow.from_client_config(json.loads(CREDENTIALS_JSON), SCOPES)
+            creds = flow.run_local_server(port=0)
+        elif os.path.exists(CREDENTIALS_FILE):
             flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
             creds = flow.run_local_server(port=0)
-        with open(TOKEN_FILE, "w") as fh:
-            fh.write(creds.to_json())
+        else:
+            raise FileNotFoundError(
+                f"Google OAuth client secret not found at '{CREDENTIALS_FILE}' and no "
+                "GDRIVE_CREDENTIALS_JSON env var set. Download it from Google Cloud Console "
+                "(OAuth client, type 'Desktop app')."
+            )
+        # only persist to disk when we're in file-based (local dev) mode
+        if not TOKEN_JSON:
+            with open(TOKEN_FILE, "w") as fh:
+                fh.write(creds.to_json())
     return build("drive", "v3", credentials=creds)
 
 

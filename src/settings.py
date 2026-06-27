@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -37,13 +38,18 @@ def load_servers(only=None):
     for name, spec in raw.items():
         if only is not None and name not in only:
             continue
+        command = spec["command"]
+        # ".venv/bin/python" is a local dev convenience; on a deployed host there's no
+        # such relative path, so fall back to whatever interpreter is actually running.
+        if command in (".venv/bin/python", "python", "python3"):
+            command = sys.executable
         args = []
         for arg in spec.get("args", []):
             if isinstance(arg, str) and arg.endswith(".py"):
                 args.append(str(PROJECT_ROOT / arg))
             else:
                 args.append(arg)
-        servers[name] = {"command": spec["command"], "args": args, "env": spec.get("env", {})}
+        servers[name] = {"command": command, "args": args, "env": spec.get("env", {})}
     return servers
 
 

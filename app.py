@@ -7,12 +7,27 @@ Run with:
 import asyncio
 import json
 import ast
+import os
 import sys
 from pathlib import Path
 
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+# Streamlit Cloud injects secrets via st.secrets, not the OS environment. Our MCP
+# subprocesses inherit os.environ, so copy any matching secrets there before importing
+# anything that reads env vars at import time (e.g. src.settings.DEFAULT_MODEL).
+try:
+    _secrets = dict(st.secrets)
+except Exception:
+    _secrets = {}
+for _key in (
+    "GROQ_API_KEY", "EXA_API_KEY", "SERPAPI_KEY", "TRAVEL_AGENT_MODEL",
+    "GDRIVE_FOLDER_ID", "GDRIVE_CREDENTIALS_JSON", "GDRIVE_TOKEN_JSON",
+):
+    if _key in _secrets and _key not in os.environ:
+        os.environ[_key] = str(_secrets[_key])
 
 from src.settings import DEFAULT_MODEL, DRIVE_FOLDER_ID, load_servers
 from src.mcp_host import MCPHost
@@ -21,7 +36,7 @@ from src.pipeline_part2 import run_part2
 
 st.set_page_config(page_title="WanderWise", page_icon="🌍", layout="wide")
 
-# ── global styles ────────────────────────────────────────────────────────────────────────────
+# ── global styles ──────────────────────────────────────────────────────────────────────
 st.markdown(
     """
     <style>
@@ -233,7 +248,7 @@ elif st.session_state.step == 1:
         if st.button("⬅ Back"):
             goto(0); st.rerun()
 
-# ── STEP 2: trip details ────────────────────────────────────────────────
+# ── STEP 2: trip details ───────────────────────────────────────────────────────
 elif st.session_state.step == 2:
     st.subheader(f"Plan details for {st.session_state.destination}")
     parsed = st.session_state.part1_result["stage1"].get("parsed_conditions", {})
@@ -331,7 +346,7 @@ elif st.session_state.step == 4:
     if st.button("⬅ Back"):
         goto(3); st.rerun()
 
-# ── STEP 5: build + show itinerary ────────────────────────────────────────────
+# ── STEP 5: build + show itinerary ─────────────────────────────────────────────────────────
 elif st.session_state.step == 5:
     st.subheader("🗺️ Your itinerary")
 
