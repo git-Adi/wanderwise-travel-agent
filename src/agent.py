@@ -51,7 +51,50 @@ def _to_openai_tools(anthropic_tools):
     ]
 
 
+# Models verified to handle tool-calling correctly on Groq's free tier. Each has its
+# own separate per-model quota, so if the primary model hits a hard failure (daily
+# limit exhausted, persistent malformed tool calls, etc.) the others are still fresh.
+FALLBACK_MODELS = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "llama-3.1-8b-instant"]
+
+
 async def run_agent(
+    host,
+    *,
+    system,
+    user,
+    model,
+    max_tokens=4096,
+    tool_servers=None,
+    only_tools=None,
+    max_turns=16,
+    on_event=None,
+):
+    """Run the agent loop, falling back to the next model in FALLBACK_MODELS if the
+    requested model fails outright (after its own internal retries are exhausted)."""
+    candidates = [model] + [m for m in FALLBACK_MODELS if m != model]
+    last_exc = None
+    for i, candidate in enumerate(candidates):
+        try:
+            if i > 0 and on_event:
+                on_event(f"  ! model '{candidates[i-1]}' failed, falling back to '{candidate}'...")
+            return await _run_agent_single(
+                host,
+                system=system,
+                user=user,
+                model=candidate,
+                max_tokens=max_tokens,
+                tool_servers=tool_servers,
+                only_tools=only_tools,
+                max_turns=max_turns,
+                on_event=on_event,
+            )
+        except Exception as e:
+            last_exc = e
+            continue
+    raise last_exc
+
+
+async def _run_agent_single(
     host,
     *,
     system,
@@ -89,8 +132,12 @@ async def run_agent(
                 break
             except Exception as e:
                 msg_lower = str(e).lower()
-                # don't retry daily token limit exhaustion — retries just burn more quota
-                if "tokens per day" in msg_lower or "tpd" in msg_lower:
+                # don't retry permanent failures — retries just waste time before falling back
+                if (
+                    "tokens per day" in msg_lower or "tpd" in msg_lower
+                    or "model_not_found" in msg_lower or "does not exist" in msg_lower
+                    or e.__class__.__name__ == "NotFoundError"
+                ):
                     raise
                 if "request too large" in msg_lower or "413" in msg_lower:
                     # trim more aggressively and retry without a long wait
